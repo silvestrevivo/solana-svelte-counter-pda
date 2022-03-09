@@ -1,0 +1,12 @@
+[programs.localnet]
+counter = "Cco9Jh1g8w86iu1qzGYsLXuJKqoZMVGoaHE5yteLUbmF"
+
+[registry]
+url = "https://anchor.projectserum.com"
+
+[provider]
+cluster = "localnet"
+wallet = "/Users/silvestrevivo/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
