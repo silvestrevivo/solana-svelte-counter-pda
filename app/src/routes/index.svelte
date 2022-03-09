@@ -3,26 +3,43 @@
 	import { walletStore } from '@svelte-on-solana/wallet-adapter-core';
 	import { workSpace } from '@svelte-on-solana/wallet-adapter-anchor';
 	import { fly } from 'svelte/transition';
+	import { web3, BN } from '@project-serum/anchor';
+	import { PublicKey } from '@solana/web3.js';
+	import { Buffer } from 'buffer';
+	import idl from '../../../target/idl/counter.json';
 
-	let value;
+	let value, counterAccount, counterAccountBump;
 
-	$: console.log('value: ', value);
+	async function findPDA() {
+		const programID = new PublicKey(idl.metadata.address);
+		let [account, accountBump] = await web3.PublicKey.findProgramAddress(
+			[Buffer.from('base_account')],
+			programID
+		);
+
+		counterAccount = account;
+		counterAccountBump = accountBump;
+
+		const data = await $workSpace.program.account.baseAccount.fetch(account);
+
+		if (data.count.toString()) {
+			value = data.count.toString();
+		}
+	}
 
 	async function createCounter() {
 		try {
 			/* interact with the program via rpc */
-			await $workSpace.program.rpc.create({
+			await $workSpace.program.rpc.create(new BN(counterAccountBump), {
 				accounts: {
-					baseAccount: $workSpace.baseAccount.publicKey,
+					baseAccount: counterAccount,
 					user: $workSpace.provider.wallet.publicKey,
 					systemProgram: $workSpace.systemProgram.programId
-				},
-				signers: [$workSpace.baseAccount]
+				}
 			});
 
-			const account = await $workSpace.program.account.baseAccount.fetch(
-				$workSpace.baseAccount.publicKey
-			);
+			const account = await $workSpace.program.account.baseAccount.fetch(counterAccount);
+
 			value = account.count.toString();
 		} catch (err) {
 			console.log('Transaction error: ', err);
@@ -32,15 +49,15 @@
 	async function increment() {
 		await $workSpace.program.rpc.increment({
 			accounts: {
-				baseAccount: $workSpace.baseAccount.publicKey
+				baseAccount: counterAccount
 			}
 		});
 
-		const account = await $workSpace.program.account.baseAccount.fetch(
-			$workSpace.baseAccount.publicKey
-		);
+		const account = await $workSpace.program.account.baseAccount.fetch(counterAccount);
 		value = account.count.toString();
 	}
+
+	$: $workSpace && findPDA();
 </script>
 
 <div class="wrapper-app">

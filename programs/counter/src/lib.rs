@@ -6,23 +6,23 @@ declare_id!("Cco9Jh1g8w86iu1qzGYsLXuJKqoZMVGoaHE5yteLUbmF");
 mod counter {
     use super::*;
 
-    pub fn create(ctx: Context<Create>) -> ProgramResult {
-        let base_account = &mut ctx.accounts.base_account;
-        base_account.count = 0;
+    pub fn create(ctx: Context<Create>, base_account_bump: u8) -> ProgramResult {
+        ctx.accounts.base_account.bump = base_account_bump;
         Ok(())
     }
 
     pub fn increment(ctx: Context<Increment>) -> ProgramResult {
-        let base_account = &mut ctx.accounts.base_account;
-        base_account.count += 1;
+        ctx.accounts.base_account.count += 1;
         Ok(())
     }
 }
 
 // Transaction instructions
 #[derive(Accounts)]
+#[instruction(base_account_bump: u8)]
 pub struct Create<'info> {
-    #[account(init, payer = user, space = 16 + 16)]
+    // #[account(init, payer = user, space = 16 + 16)] where is the space defined?
+    #[account(init, seeds = [b"base_account".as_ref()], bump = base_account_bump, payer = user)]
     pub base_account: Account<'info, BaseAccount>,
     #[account(mut)]
     pub user: Signer<'info>,
@@ -32,12 +32,14 @@ pub struct Create<'info> {
 // Transaction instructions
 #[derive(Accounts)]
 pub struct Increment<'info> {
-    #[account(mut)]
+    #[account(mut, seeds = [b"base_account".as_ref()], bump = base_account.bump)]
     pub base_account: Account<'info, BaseAccount>,
 }
 
 // An account that goes inside a transaction instruction
 #[account]
+#[derive(Default)]
 pub struct BaseAccount {
-    pub count: u64,
+    count: u64,
+    bump: u8,
 }
