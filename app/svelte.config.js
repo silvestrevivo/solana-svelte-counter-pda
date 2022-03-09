@@ -8,7 +8,15 @@ const config = {
 	preprocess: preprocess(),
 
 	kit: {
-		adapter: adapter()
+		adapter: adapter(),
+		vite: {
+			define: {
+				'process.env.BROWSER': true
+			},
+			optimizeDeps: {
+				include: ['@project-serum/anchor'],
+			},
+		}
 	}
 };
 
